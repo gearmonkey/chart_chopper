@@ -33,7 +33,10 @@ class hopper:
         for track in tracks:
             if 'youtube.com' in track:
                 #assume it's a youtube url
-                self.videos.append(video.loadavfromyoutube(track))
+                try:
+                    self.videos.append(video.loadavfromyoutube(track))
+                except:
+                    print 'unable to fetch', track
             else:
                 self.videos.append(video.loadav(track))
         self.collectvid = video.EditableFrames(settings=self.videos[0].video.settings)
@@ -44,7 +47,7 @@ class hopper:
         out_ts = max([v.audio.analysis.time_signature['value'] for v in self.videos])
         print 'out_ts:', out_ts
         all_beats = []
-        for beat in range(1,out_ts+):
+        for beat in range(1,out_ts+1):
             all_beats.append([v.audio.analysis.beats.that(fall_on_the(beat)) for v in self.videos])
             # all_beats.append(dict(zip(range(len(videos)),[v.audio.analysis.beats.that(fall_on_the(beat)) for v in self.videos])))
         print 'beat break down:'

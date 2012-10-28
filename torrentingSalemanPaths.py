@@ -10,12 +10,15 @@ Copyright (c) 2012 . All rights reserved.
 import sys
 import os
 
-import echonest.video as video
 import mmpy
+import marmalade
 import gdata.youtube
 import gdata.youtube.service
 
+import hopper
 from keys import *
+
+marmalade.config.TIMJ_API_KEY = JAM_KEY
 
 
 def relgrps2ytvids(releasegroups):
@@ -32,6 +35,8 @@ def relgrps2ytvids(releasegroups):
         query.vq = '{0} {1}'.format(relgrp.name, relgrp.artist.name)
         feed = yt_service.YouTubeQuery(query)
         yt_links.append(feed.entry[0].media.player.url.strip('&feature=youtube_gdata_player'))
+        print '{0}--{1} is at {2}'.format(relgrp.name, relgrp.artist.name,
+                                          feed.entry[0].media.player.url.strip('&feature=youtube_gdata_player'))
     return yt_links
     
 
@@ -49,8 +54,38 @@ def topNsingles(n=10):
             break
     return top_singles
 
+def jams2vids(jams, service ='youtube'):
+    """
+    convert list of jams to list of urls, filtered by service
+    """
+    return [j.get_url() for j in jams if service in j.get_url()]
+    
+def lastNJams(user, N=10):
+    return marmalade.TIMJUser(user).get_jams()[:N]
+
 def main():
-    pass
+    if len(sys.argv)>1:
+        for username in sys.argv[1:]:
+            print 'fetching the last 5 youtube jams from', username
+            try:
+                hopped = hopper.hopper(jams2vids(lastNJams(username))[:5]) #grab ten jams, to try and ensure 5 from yt
+                hopped.assemble_by()
+                try:
+                    hopped.writeout(username+'.mp4')
+                except:
+                    hopped.writeout(username+'flv')
+            except:
+                print '**unable to deal with',username,'continuing...'
+    else:
+        top_singles = topNsingles(6)
+        as_yt = relgrps2ytvids(top_singles)
+        hopped = hopper.hopper(as_yt)
+        hopped.assemble_by()
+        try:
+            hopped.writeout('chart.mp4')
+        except:
+            #fall back on flv since I know that will work
+            hopped.writeout('chart.flv')
 
 
 if __name__ == '__main__':
