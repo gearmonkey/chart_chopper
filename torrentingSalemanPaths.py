@@ -41,6 +41,7 @@ def topNsingles(n=10):
     and don't have the exact same name as tracks thathave already been added (note: this is a crap way to confirm uniqueness)
     """
     p2p_diff = mmpy.Chart('p2p daily releasegroups')
+    top_singles = []
     for (rank, val, relgrp) in ( rg for rg in p2p_diff.releasegroup if 'single' in rg[2].description.lower() ):
         if len(top_singles) == 0 or relgrp.name not in [rg.name for rg in top_singles]:
             top_singles.append(relgrp)
