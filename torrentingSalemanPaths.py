@@ -69,10 +69,10 @@ def jams2vids(jams, service ='youtube'):
             urls.append(jam.get_url())
             print 'actual jam url used:', jam.get_url()
         else:
-            query.vq = '{0} {1}'.format(jam.get_title(), jam.get_artist())
+            query.vq = u'{0} {1}'.format(jam.get_title(), jam.get_artist())
             feed = yt_service.YouTubeQuery(query)
             urls.append(feed.entry[0].media.player.url.strip('&feature=youtube_gdata_player'))
-            print '{0}--{1} is at {2}'.format(jam.get_title(), jam.get_artist(),
+            print u'{0}--{1} is at {2}'.format(jam.get_title(), jam.get_artist(),
                                               feed.entry[0].media.player.url.strip('&feature=youtube_gdata_player'))
     return urls
     
@@ -91,7 +91,7 @@ def main():
             hopped = hopper.hopper(ytvids) #grab ten jams, to try and ensure 5 from yt
             hopped.assemble_by()
             try:
-                hopped.writeout(username+'.mov')
+                hopped.writeout(username+'.flv')
             except:
                 hopped.writeout(username+'flv')
             # except:
@@ -102,7 +102,7 @@ def main():
         hopped = hopper.hopper(as_yt)
         hopped.assemble_by()
         try:
-            hopped.writeout('chart.mov')
+            hopped.writeout('chart.flv')
         except:
             #fall back on flv since I know that will work
             hopped.writeout('chart.flv')
