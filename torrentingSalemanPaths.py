@@ -56,9 +56,25 @@ def topNsingles(n=10):
 
 def jams2vids(jams, service ='youtube'):
     """
-    convert list of jams to list of urls, filtered by service
+    convert list of jams to list of urls, filtered by service, then searching on yt
     """
-    return [j.get_url() for j in jams if service in j.get_url()]
+    yt_service = gdata.youtube.service.YouTubeService()
+    yt_service.developer_key = YT_DEV_KEY
+    query = gdata.youtube.service.YouTubeVideoQuery()
+    query.orderby = 'relevance'
+    query.racy = 'include'
+    urls = []
+    for jam in jams:
+        if jam.get_url() is not None and service in jam.get_url():
+            urls.append(jam.get_url())
+            print 'actual jam url used:', jam.get_url()
+        else:
+            query.vq = '{0} {1}'.format(jam.get_title(), jam.get_artist())
+            feed = yt_service.YouTubeQuery(query)
+            urls.append(feed.entry[0].media.player.url.strip('&feature=youtube_gdata_player'))
+            print '{0}--{1} is at {2}'.format(jam.get_title(), jam.get_artist(),
+                                              feed.entry[0].media.player.url.strip('&feature=youtube_gdata_player'))
+    return urls
     
 def lastNJams(user, N=10):
     return marmalade.TIMJUser(user).get_jams()[:N]
@@ -67,22 +83,26 @@ def main():
     if len(sys.argv)>1:
         for username in sys.argv[1:]:
             print 'fetching the last 5 youtube jams from', username
+            # try:
+            jams = lastNJams(username)[:10]
+            print jams
+            ytvids = jams2vids(jams)[:5]
+            print ytvids
+            hopped = hopper.hopper(ytvids) #grab ten jams, to try and ensure 5 from yt
+            hopped.assemble_by()
             try:
-                hopped = hopper.hopper(jams2vids(lastNJams(username))[:5]) #grab ten jams, to try and ensure 5 from yt
-                hopped.assemble_by()
-                try:
-                    hopped.writeout(username+'.mp4')
-                except:
-                    hopped.writeout(username+'flv')
+                hopped.writeout(username+'.mov')
             except:
-                print '**unable to deal with',username,'continuing...'
+                hopped.writeout(username+'flv')
+            # except:
+                # print '**unable to deal with',username,'continuing...'
     else:
         top_singles = topNsingles(6)
         as_yt = relgrps2ytvids(top_singles)
         hopped = hopper.hopper(as_yt)
         hopped.assemble_by()
         try:
-            hopped.writeout('chart.mp4')
+            hopped.writeout('chart.mov')
         except:
             #fall back on flv since I know that will work
             hopped.writeout('chart.flv')
