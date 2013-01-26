@@ -14,6 +14,7 @@ import sys
 import os
 import unittest
 import random
+import dirac
 from echonest import audio, video
 from echonest.selection import fall_on_the
 from echonest.sorting import timbre_distance_from, pitch_distance_from
@@ -45,7 +46,7 @@ class hopper:
     def assemble_by(self, samesongdownweight=10000, method = 'random'):
         #use max time signature as time signature
         if method not in ['random', 'overlap']:
-            raise NotImplemented('the method {0} has not been built yet.'.format())
+            raise NotImplementedError('the method {0} has not been built yet.'.format(method))
         if method =='overlap':
             if len(self.videos)!=2:
                 raise ValueError('overlap requires exactly 2 videos')
@@ -59,17 +60,21 @@ class hopper:
                         try:
                             beat_to_use = vid_b.audio.analysis.sections[section_number].children()[bar_number].children()[beat_number]
                         except IndexError:
-                            print 'ran out of beats, filling in from source video'
-                            beat_to_use = beat
+                            print 'ran out of beats, filling in from random appropriate beats'
+                            break
                         out_beats.append(audio.Simultaneous([beat_to_use]))
                         if len(stretch_ratios)==0:
                             stretch_ratios.append((0,beat.duration/beat_to_use.duration))
                             next_start = 0
                         stretch_ratios.append((next_start,beat.duration/beat_to_use.duration))
                         next_start += beat_to_use.duration*beat_to_use.source.sampleRate
-                        collectvid += vid_a.video[beat]
-            
-        if method = 'random':
+                        self.collectvid += vid_a.video[beat]
+            unwarped = out_beats.render()
+            warpeded_audio = dirac.timeScale(unwarped, stretch_ratios, unwarped.sampleRate, 0)
+            self.collectaudio = audio.AudioData(ndarray=warpeded_audio, shape=warpeded_audio.shape, 
+                                                sampleRate=unwarped.sampleRate, numChannels=warpeded_audio.shape[1])
+
+        if method == 'random':
             out_ts = max([v.audio.analysis.time_signature['value'] for v in self.videos])
             print 'out_ts:', out_ts
             all_beats = []
