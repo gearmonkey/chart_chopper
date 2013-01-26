@@ -70,7 +70,11 @@ def jams2vids(jams, service ='youtube'):
             print 'actual jam url used:', jam.get_url()
         else:
             query.vq = u'{0} {1}'.format(jam.get_title(), jam.get_artist())
-            feed = yt_service.YouTubeQuery(query)
+            try:
+                feed = yt_service.YouTubeQuery(query)
+            except:
+                print 'track lookup error'
+                continue
             urls.append(feed.entry[0].media.player.url.strip('&feature=youtube_gdata_player'))
             print u'{0}--{1} is at {2}'.format(jam.get_title(), jam.get_artist(),
                                               feed.entry[0].media.player.url.strip('&feature=youtube_gdata_player'))
@@ -86,7 +90,7 @@ def main():
             # try:
             jams = lastNJams(username)[:10]
             print jams
-            ytvids = jams2vids(jams)[:5]
+            ytvids = jams2vids(jams)
             print ytvids
             hopped = hopper.hopper(ytvids) #grab ten jams, to try and ensure 5 from yt
             hopped.assemble_by()
