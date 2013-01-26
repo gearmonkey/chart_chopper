@@ -44,37 +44,58 @@ class hopper:
     
     def assemble_by(self, samesongdownweight=10000, method = 'random'):
         #use max time signature as time signature
-        out_ts = max([v.audio.analysis.time_signature['value'] for v in self.videos])
-        print 'out_ts:', out_ts
-        all_beats = []
-        for beat in range(1,out_ts+1):
-            all_beats.append([v.audio.analysis.beats.that(fall_on_the(beat)) for v in self.videos])
-            # all_beats.append(dict(zip(range(len(videos)),[v.audio.analysis.beats.that(fall_on_the(beat)) for v in self.videos])))
-        print 'beat break down:'
-        for idx, beat in enumerate(all_beats):
-            print 'beat',idx+1,':',
-            print ' '.join([str(len(x)) for x in beat])
-        # this_beat = all_beats[1][0].pop(0)
-        on_the = 0
-        # self.collectvid += self.videos[0].video[this_beat]
-        # self.collectaudio += self.videos[0].audio[this_beat]
-        
-        while remaining_beats(all_beats) > 0:
-            print 'remaining: ', remaining_beats(all_beats)
-            #grabs from a track that still has beats
-            try:
-                next_beat_from = random.sample([x for x in range(len(all_beats[on_the])) if len(all_beats[on_the][x])>0],1)[0]
-            except ValueError:
-                print 'not enough beats left, giving up...'
-                return
-            print 'fetching a', on_the, 'beat from ', next_beat_from
-            this_beat = all_beats[on_the][next_beat_from].pop(0)            
-            self.collectvid += self.videos[next_beat_from].video[this_beat]
-            self.collectaudio.append(audio.Simultaneous([self.videos[next_beat_from].audio[this_beat]]))
-            #advance the beatticker
-            on_the += 1
-            if on_the >= out_ts:
-                on_the = 0
+        if method not in ['random', 'overlap']:
+            raise NotImplemented('the method {0} has not been built yet.'.format())
+        if method =='overlap':
+            if len(self.videos)!=2:
+                raise ValueError('overlap requires exactly 2 videos')
+            vid_a, vid_b = self.videos
+            out_ts = vid_a.audio.analysis.time_signature['value']
+            stretch_ratios = []
+            out_beats = audio.AudioQuantumList()
+            for section_number, section in enumerate(vid_a.audio.analysis.sections):
+                for bar_number, bar in enumerate(section.children()):
+                    for beat_number, beat in enumerate(bar.children()):
+                        try:
+                            beat_to_use = vid_b.audio.analysis.sections[section_number].children()[bar_number].children()[beat_number]
+                        except IndexError:
+                            print 'ran out of beats, filling in from source video'
+                            beat_to_use = beat
+                        out_beats.append(audio.Simultaneous([beat_to_use]))
+                        if len(stretch_ratios)==0:
+                            stretch_ratios.append((0,beat.duration/beat_to_use.duration))
+                            next_start = 0
+                        stretch_ratios.append((next_start,beat.duration/beat_to_use.duration))
+                        next_start += beat_to_use.duration*beat_to_use.source.sampleRate
+                        collectvid += vid_a.video[beat]
+            
+        if method = 'random':
+            out_ts = max([v.audio.analysis.time_signature['value'] for v in self.videos])
+            print 'out_ts:', out_ts
+            all_beats = []
+            for beat in range(1,out_ts+1):
+                all_beats.append([v.audio.analysis.beats.that(fall_on_the(beat)) for v in self.videos])
+            print 'beat break down:'
+            for idx, beat in enumerate(all_beats):
+                print 'beat',idx+1,':',
+                print ' '.join([str(len(x)) for x in beat])
+            on_the = 0
+            while remaining_beats(all_beats) > 0:
+                print 'remaining: ', remaining_beats(all_beats)
+                #grabs from a track that still has beats
+                try:
+                    next_beat_from = random.sample([x for x in range(len(all_beats[on_the])) if len(all_beats[on_the][x])>0],1)[0]
+                except ValueError:
+                    print 'not enough beats left, giving up...'
+                    return
+                print 'fetching a', on_the, 'beat from ', next_beat_from
+                this_beat = all_beats[on_the][next_beat_from].pop(0)            
+                self.collectvid += self.videos[next_beat_from].video[this_beat]
+                self.collectaudio.append(audio.Simultaneous([self.videos[next_beat_from].audio[this_beat]]))
+                #advance the beatticker
+                on_the += 1
+                if on_the >= out_ts:
+                    on_the = 0
                 
     def writeout(self, filename):
         outav = video.SynchronizedAV(audio=self.collectaudio.render(), video=self.collectvid)
