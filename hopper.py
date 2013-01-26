@@ -61,7 +61,7 @@ class hopper:
                             beat_to_use = vid_b.audio.analysis.sections[section_number].children()[bar_number].children()[beat_number]
                         except IndexError:
                             print 'ran out of beats, filling in from random appropriate beats'
-                            break
+                            continue
                         out_beats.append(audio.Simultaneous([beat_to_use]))
                         if len(stretch_ratios)==0:
                             stretch_ratios.append((0,beat.duration/beat_to_use.duration))
